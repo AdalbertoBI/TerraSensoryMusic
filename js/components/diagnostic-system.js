@@ -41,6 +41,9 @@ class DiagnosticSystem {
     }
 
     showDiagnosticMessage(message, level) {
+        // Adicionar animações CSS se não existirem
+        this.ensureAnimationStyles();
+        
         // Criar elemento de notificação
         const notification = document.createElement('div');
         notification.className = `diagnostic-notification ${level}`;
@@ -52,11 +55,19 @@ class DiagnosticSystem {
             </div>
         `;
         
+        // Posicionar no canto inferior esquerdo
+        const existingNotifications = document.querySelectorAll('.diagnostic-notification');
+        let bottomPosition = 20;
+        
+        existingNotifications.forEach(existing => {
+            bottomPosition += existing.offsetHeight + 10;
+        });
+        
         // Adicionar styles inline para garantir que funcione
         notification.style.cssText = `
             position: fixed;
-            top: 20px;
-            right: 20px;
+            bottom: ${bottomPosition}px;
+            left: 20px;
             background: ${level === 'terra' ? '#d4edda' : level === 'error' ? '#f8d7da' : '#d1ecf1'};
             color: ${level === 'terra' ? '#155724' : level === 'error' ? '#721c24' : '#0c5460'};
             padding: 12px;
@@ -65,7 +76,7 @@ class DiagnosticSystem {
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             z-index: 10000;
             max-width: 400px;
-            animation: slideInRight 0.3s ease;
+            animation: slideInLeft 0.3s ease;
         `;
         
         document.body.appendChild(notification);
@@ -73,10 +84,29 @@ class DiagnosticSystem {
         // Auto-remover após 8 segundos
         setTimeout(() => {
             if (notification.parentNode) {
-                notification.style.animation = 'slideOutRight 0.3s ease';
+                notification.style.animation = 'slideOutLeft 0.3s ease';
                 setTimeout(() => notification.remove(), 300);
             }
         }, 8000);
+    }
+
+    ensureAnimationStyles() {
+        if (!document.getElementById('diagnosticAnimations')) {
+            const style = document.createElement('style');
+            style.id = 'diagnosticAnimations';
+            style.textContent = `
+                @keyframes slideInLeft {
+                    from { opacity: 0; transform: translateX(-100%); }
+                    to { opacity: 1; transform: translateX(0); }
+                }
+                
+                @keyframes slideOutLeft {
+                    from { opacity: 1; transform: translateX(0); }
+                    to { opacity: 0; transform: translateX(-100%); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
     }
 
     async runFullDiagnosis() {

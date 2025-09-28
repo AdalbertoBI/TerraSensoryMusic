@@ -8,6 +8,13 @@
     <meta name="keywords" content="MIDI, Arduino, Terra Eletrônica, Música, Sensores, RF24">
     <meta name="author" content="Terra Eletrônica">
     
+    <!-- Chrome/PWA específico -->
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="color-scheme" content="dark light">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://adalbertobi.github.io/TerraSensoryMusic/">
@@ -26,7 +33,30 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+    
+    <!-- Chrome Compatibility Check -->
+    <script>
+        // Verificar compatibilidade do navegador
+        if (!navigator.requestMIDIAccess) {
+            console.warn('⚠️ Web MIDI API não suportada neste navegador');
+            document.addEventListener('DOMContentLoaded', function() {
+                const banner = document.createElement('div');
+                banner.style.cssText = `
+                    position: fixed; top: 0; left: 0; right: 0; z-index: 10000;
+                    background: #ff6b6b; color: white; padding: 10px; text-align: center;
+                    font-family: Arial, sans-serif; font-size: 14px;
+                `;
+                banner.innerHTML = '⚠️ Este navegador não suporta Web MIDI API. Use Chrome/Edge com HTTPS!';
+                document.body.insertBefore(banner, document.body.firstChild);
+            });
+        }
+        
+        // Verificar se está em HTTPS (exceto localhost)
+        if (location.protocol !== 'https:' && !location.hostname.match(/localhost|127\.0\.0\.1/)) {
+            console.warn('⚠️ Web MIDI API requer HTTPS');
+        }
+    </script>
 </head>
 <body>
     <div class="container">
@@ -45,9 +75,159 @@
                     <button id="connectBtn" class="btn btn-primary">Conectar MIDI</button>
                 </div>
             </div>
+            
+            <!-- Sistema de Abas -->
+            <div class="tab-navigation">
+                <button class="tab-button active" data-tab="monitoring">
+                    🎛️ Monitoramento
+                </button>
+                <button class="tab-button" data-tab="midi-terra">
+                    🎯 Midi Terra
+                </button>
+            </div>
         </header>
 
-        <!-- Painel de Controle -->
+        <!-- Canais MIDI -->
+        <div class="channels-panel">
+            <h3>📡 Canais MIDI</h3>
+            <div class="channels-grid" id="channelsGrid">
+                <!-- Canais serão criados dinamicamente -->
+                <div class="channel-card" id="channel-0">
+                    <div class="channel-number">Canal 0</div>
+                    <div class="channel-hex">CH 0</div>
+                    <div class="channel-status">Inativo</div>
+                    <div class="channel-activity">
+                        <div class="channel-activity-bar"></div>
+                    </div>
+                </div>
+                <div class="channel-card" id="channel-1">
+                    <div class="channel-number">Canal 1</div>
+                    <div class="channel-hex">CH 1</div>
+                    <div class="channel-status">Inativo</div>
+                    <div class="channel-activity">
+                        <div class="channel-activity-bar"></div>
+                    </div>
+                </div>
+                <div class="channel-card" id="channel-2">
+                    <div class="channel-number">Canal 2</div>
+                    <div class="channel-hex">CH 2</div>
+                    <div class="channel-status">Inativo</div>
+                    <div class="channel-activity">
+                        <div class="channel-activity-bar"></div>
+                    </div>
+                </div>
+                <div class="channel-card" id="channel-3">
+                    <div class="channel-number">Canal 3</div>
+                    <div class="channel-hex">CH 3</div>
+                    <div class="channel-status">Inativo</div>
+                    <div class="channel-activity">
+                        <div class="channel-activity-bar"></div>
+                    </div>
+                </div>
+                <div class="channel-card" id="channel-4">
+                    <div class="channel-number">Canal 4</div>
+                    <div class="channel-hex">CH 4</div>
+                    <div class="channel-status">Inativo</div>
+                    <div class="channel-activity">
+                        <div class="channel-activity-bar"></div>
+                    </div>
+                </div>
+                <div class="channel-card" id="channel-5">
+                    <div class="channel-number">Canal 5</div>
+                    <div class="channel-hex">CH 5</div>
+                    <div class="channel-status">Inativo</div>
+                    <div class="channel-activity">
+                        <div class="channel-activity-bar"></div>
+                    </div>
+                </div>
+                <div class="channel-card" id="channel-6">
+                    <div class="channel-number">Canal 6</div>
+                    <div class="channel-hex">CH 6</div>
+                    <div class="channel-status">Inativo</div>
+                    <div class="channel-activity">
+                        <div class="channel-activity-bar"></div>
+                    </div>
+                </div>
+                <div class="channel-card" id="channel-7">
+                    <div class="channel-number">Canal 7</div>
+                    <div class="channel-hex">CH 7</div>
+                    <div class="channel-status">Inativo</div>
+                    <div class="channel-activity">
+                        <div class="channel-activity-bar"></div>
+                    </div>
+                </div>
+                <div class="channel-card" id="channel-8">
+                    <div class="channel-number">Canal 8</div>
+                    <div class="channel-hex">CH 8</div>
+                    <div class="channel-status">Inativo</div>
+                    <div class="channel-activity">
+                        <div class="channel-activity-bar"></div>
+                    </div>
+                </div>
+                <div class="channel-card" id="channel-9">
+                    <div class="channel-number">Canal 9</div>
+                    <div class="channel-hex">CH 9</div>
+                    <div class="channel-status">Inativo</div>
+                    <div class="channel-activity">
+                        <div class="channel-activity-bar"></div>
+                    </div>
+                </div>
+                <div class="channel-card" id="channel-10">
+                    <div class="channel-number">Canal 10</div>
+                    <div class="channel-hex">CH 10</div>
+                    <div class="channel-status">Inativo</div>
+                    <div class="channel-activity">
+                        <div class="channel-activity-bar"></div>
+                    </div>
+                </div>
+                <div class="channel-card" id="channel-11">
+                    <div class="channel-number">Canal 11</div>
+                    <div class="channel-hex">CH 11</div>
+                    <div class="channel-status">Inativo</div>
+                    <div class="channel-activity">
+                        <div class="channel-activity-bar"></div>
+                    </div>
+                </div>
+                <div class="channel-card" id="channel-12">
+                    <div class="channel-number">Canal 12</div>
+                    <div class="channel-hex">CH 12</div>
+                    <div class="channel-status">Inativo</div>
+                    <div class="channel-activity">
+                        <div class="channel-activity-bar"></div>
+                    </div>
+                </div>
+                <div class="channel-card" id="channel-13">
+                    <div class="channel-number">Canal 13</div>
+                    <div class="channel-hex">CH 13</div>
+                    <div class="channel-status">Inativo</div>
+                    <div class="channel-activity">
+                        <div class="channel-activity-bar"></div>
+                    </div>
+                </div>
+                <div class="channel-card" id="channel-14">
+                    <div class="channel-number">Canal 14</div>
+                    <div class="channel-hex">CH 14</div>
+                    <div class="channel-status">Inativo</div>
+                    <div class="channel-activity">
+                        <div class="channel-activity-bar"></div>
+                    </div>
+                </div>
+                <div class="channel-card" id="channel-15">
+                    <div class="channel-number">Canal 15</div>
+                    <div class="channel-hex">CH 15</div>
+                    <div class="channel-status">Inativo</div>
+                    <div class="channel-activity">
+                        <div class="channel-activity-bar"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conteúdo das Abas -->
+        <div class="tab-content">
+            <!-- Aba Monitoramento (ativa por padrão) -->
+            <div class="tab-panel active" id="monitoring-panel">
+                <!-- Painel de Controle -->
         <div class="control-panel">
             <div class="panel-section">
                 <h3>Filtros</h3>
@@ -133,13 +313,7 @@
             </div>
         </div>
 
-        <!-- Canais MIDI -->
-        <div class="channels-panel">
-            <h3>📡 Canais MIDI</h3>
-            <div class="channels-grid" id="channelsGrid">
-                <!-- Canais serão criados dinamicamente -->
-            </div>
-        </div>
+        
 
         <!-- Log de Mensagens -->
         <div class="log-panel">
@@ -168,7 +342,25 @@
                     <div class="log-empty">🎵 TerraSensoryMusic aguardando conexão MIDI... Conecte seu dispositivo Terra!</div>
                 </div>
             </div>
+            </div>
+            <!-- Fim da Aba Monitoramento -->
+
+            <!-- Aba Midi Terra (oculta por padrão) -->
+            <div class="tab-panel" id="midi-terra-panel">
+                <div class="midi-terra-content">
+                    <div class="welcome-terra">
+                        <h2>🎯 Midi Terra - Terra Eletrônica</h2>
+                        <p>Painel dedicado para configuração e controle do dispositivo Midi-Terra</p>
+                        <div class="coming-soon">
+                            <div class="coming-soon-icon">⚙️</div>
+                            <h3>Em Desenvolvimento</h3>
+                            <p>Funcionalidades específicas do Midi Terra serão adicionadas em breve.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
+        <!-- Fim do Conteúdo das Abas -->
 
         <!-- Footer -->
         <footer class="footer">

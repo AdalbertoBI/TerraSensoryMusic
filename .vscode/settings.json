@@ -1,0 +1,72 @@
+{
+    // Configurações Live Server para Terra Sensory Music
+    "liveServer.settings.port": 5500,
+    "liveServer.settings.root": "/",
+    "liveServer.settings.CustomBrowser": "chrome",
+    "liveServer.settings.AdvanceCustomBrowserCmdLine": "chrome --disable-web-security --disable-features=VizDisplayCompositor --enable-web-midi --allow-running-insecure-content",
+    "liveServer.settings.NoBrowser": false,
+    "liveServer.settings.ignoreFiles": [
+        ".vscode/**",
+        "**/*.scss",
+        "**/*.sass",
+        "**/*.ts",
+        "node_modules/**",
+        ".git/**"
+    ],
+    "liveServer.settings.donotShowInfoMsg": true,
+    "liveServer.settings.donotVerifyTags": true,
+    "liveServer.settings.mount": [
+        ["/", "./"]
+    ],
+    "liveServer.settings.file": "index.html",
+    "liveServer.settings.wait": 100,
+    "liveServer.settings.fullReload": true,
+    
+    // Configurações específicas para Web MIDI API
+    "liveServer.settings.https": {
+        "enable": false,
+        "cert": "",
+        "key": "",
+        "passphrase": ""
+    },
+    
+    // Headers para MIDI (caso necessário HTTPS no futuro)
+    "liveServer.settings.headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Permissions-Policy": "midi=*"
+    },
+    
+    // Configurações de desenvolvimento
+    "liveServer.settings.showOnStatusbar": true,
+    "liveServer.settings.multiRootWorkspaceName": "Terra Sensory Music",
+    
+    // Configurações gerais do VS Code para o projeto
+    "html.format.indentHandlebars": true,
+    "html.format.indentInnerHtml": true,
+    "css.validate": true,
+    "javascript.validate.enable": true,
+    "javascript.preferences.quoteStyle": "single",
+    "emmet.includeLanguages": {
+        "javascript": "javascriptreact"
+    },
+    
+    // Configurações para melhor experiência de desenvolvimento
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit"
+    },
+    "files.autoSave": "afterDelay",
+    "files.autoSaveDelay": 1000,
+    
+    // Configurações de terminal para comandos MIDI
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "terminal.integrated.profiles.windows": {
+        "PowerShell": {
+            "source": "PowerShell",
+            "icon": "terminal-powershell",
+            "args": ["-NoLogo"]
+        }
+    }
+}

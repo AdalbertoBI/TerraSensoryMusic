@@ -61,7 +61,16 @@ class UIManager {
         // Fechar notificações ao clicar no X
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('notification-close')) {
-                e.target.parentElement.parentElement.remove();
+                const notification = e.target.closest('.diagnostic-notification');
+                if (notification) {
+                    notification.style.animation = 'slideOutLeft 0.3s ease';
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.remove();
+                            this.repositionNotifications();
+                        }
+                    }, 300);
+                }
             }
         });
     }
@@ -73,15 +82,16 @@ class UIManager {
             style.textContent = `
                 .diagnostic-notification {
                     position: fixed;
-                    top: 20px;
-                    right: 20px;
+                    bottom: 20px;
+                    left: 20px;
                     min-width: 300px;
-                    max-width: 500px;
+                    max-width: 450px;
                     z-index: 10001;
                     border-radius: 8px;
                     box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-                    animation: slideInRight 0.3s ease;
-                    margin-bottom: 10px;
+                    animation: slideInLeft 0.3s ease;
+                    margin-top: 10px;
+                    transition: bottom 0.3s ease;
                 }
                 
                 .diagnostic-notification.terra {
@@ -141,14 +151,23 @@ class UIManager {
                     background: rgba(0,0,0,0.1);
                 }
                 
-                @keyframes slideInRight {
-                    from { opacity: 0; transform: translateX(100%); }
+                @keyframes slideInLeft {
+                    from { opacity: 0; transform: translateX(-100%); }
                     to { opacity: 1; transform: translateX(0); }
                 }
                 
-                @keyframes slideOutRight {
+                @keyframes slideOutLeft {
                     from { opacity: 1; transform: translateX(0); }
-                    to { opacity: 0; transform: translateX(100%); }
+                    to { opacity: 0; transform: translateX(-100%); }
+                }
+                
+                @media (max-width: 500px) {
+                    .diagnostic-notification {
+                        left: 10px;
+                        right: 10px;
+                        min-width: auto;
+                        max-width: none;
+                    }
                 }
             `;
             document.head.appendChild(style);
@@ -219,15 +238,15 @@ class UIManager {
             </div>
         `;
 
-        // Posicionar notificações
+        // Posicionar notificações (empilhar de baixo para cima)
         const existingNotifications = document.querySelectorAll('.diagnostic-notification');
-        let topPosition = 20;
+        let bottomPosition = 20;
         
         existingNotifications.forEach(existing => {
-            topPosition += existing.offsetHeight + 10;
+            bottomPosition += existing.offsetHeight + 10;
         });
         
-        notification.style.top = `${topPosition}px`;
+        notification.style.bottom = `${bottomPosition}px`;
         
         document.body.appendChild(notification);
         this.notifications.push(notification);
@@ -235,7 +254,7 @@ class UIManager {
         // Auto-remover
         setTimeout(() => {
             if (notification.parentNode) {
-                notification.style.animation = 'slideOutRight 0.3s ease';
+                notification.style.animation = 'slideOutLeft 0.3s ease';
                 setTimeout(() => {
                     if (notification.parentNode) {
                         notification.remove();
@@ -246,6 +265,16 @@ class UIManager {
         }, duration);
 
         return notification;
+    }
+
+    repositionNotifications() {
+        const visibleNotifications = document.querySelectorAll('.diagnostic-notification');
+        let bottomPosition = 20;
+        
+        visibleNotifications.forEach(notification => {
+            notification.style.bottom = `${bottomPosition}px`;
+            bottomPosition += notification.offsetHeight + 10;
+        });
     }
 
     // Métodos de modal
@@ -317,6 +346,12 @@ class UIManager {
                 if (statusText) statusText.textContent = 'Conectado';
                 connectBtn.textContent = 'Desconectar';
                 connectBtn.disabled = false;
+                break;
+            case 'fallback':
+                if (statusText) statusText.textContent = 'Modo Diagnóstico';
+                connectBtn.textContent = '🔄 Re-escanear';
+                connectBtn.disabled = false;
+                statusElement.className = 'status-indicator fallback';
                 break;
             case 'disconnected':
             default:

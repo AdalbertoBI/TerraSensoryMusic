@@ -1,0 +1,15 @@
+{
+    "recommendations": [
+        "ritwickdey.liveserver",
+        "ms-vscode.vscode-chrome-debug",
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-json",
+        "formulahendry.auto-rename-tag",
+        "christian-kohler.path-intellisense",
+        "ms-vscode.vscode-typescript-next",
+        "ms-vscode.references-view",
+        "usernamehw.errorlens"
+    ],
+    "unwantedRecommendations": []
+}

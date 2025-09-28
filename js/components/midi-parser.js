@@ -47,6 +47,13 @@ class MidiParser {
         const rawData = Array.isArray(data) ? data : Array.from(data);
         const status = rawData[0];
         
+        // 🔥 DEBUG: Verificar se parser está sendo chamado
+        console.log('🎵 Parser processando:', {
+            status: '0x' + status.toString(16).toUpperCase(),
+            data: rawData.map(b => '0x' + b.toString(16).toUpperCase().padStart(2, '0')).join(' '),
+            length: rawData.length
+        });
+        
         // Verificar se é uma mensagem de sistema real-time (0xF8-0xFF)
         if (status >= 0xF8) {
             return this.parseSystemRealTime(rawData, timestamp, deviceInfo);

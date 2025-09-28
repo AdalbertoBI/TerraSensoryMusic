@@ -233,10 +233,143 @@ body {
     background: #ffc107;
 }
 
+.status-indicator.fallback {
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid #ffc107;
+}
+
+.status-indicator.fallback .status-dot {
+    background: #ff9800;
+    animation: pulse 1.5s infinite;
+}
+
+.status-indicator.connecting {
+    background: rgba(23, 162, 184, 0.1);
+    border: 1px solid #17a2b8;
+}
+
+.status-indicator.connecting .status-dot {
+    background: #17a2b8;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 @keyframes pulse {
     0% { opacity: 1; }
     50% { opacity: 0.5; }
     100% { opacity: 1; }
+}
+
+/* Sistema de Abas */
+.tab-navigation {
+    display: flex;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0.02);
+    padding: 0;
+    margin: 0;
+}
+
+.tab-button {
+    background: none;
+    border: none;
+    padding: 15px 25px;
+    font-size: 0.95em;
+    font-weight: 500;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-bottom: 3px solid transparent;
+    position: relative;
+}
+
+.tab-button:hover {
+    background: rgba(0, 123, 255, 0.05);
+    color: #007bff;
+}
+
+.tab-button.active {
+    color: #007bff;
+    background: rgba(0, 123, 255, 0.1);
+    border-bottom-color: #007bff;
+}
+
+.tab-button.active::before {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #007bff, #0056b3);
+    border-radius: 2px 2px 0 0;
+}
+
+/* Conteúdo das Abas */
+.tab-content {
+    margin-top: 0;
+}
+
+.tab-panel {
+    display: none;
+}
+
+.tab-panel.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Estilos da Aba Midi Terra */
+.midi-terra-content {
+    padding: 30px;
+    text-align: center;
+}
+
+.welcome-terra h2 {
+    color: #1e3c72;
+    margin-bottom: 10px;
+    font-size: 2em;
+}
+
+.welcome-terra > p {
+    color: #666;
+    margin-bottom: 40px;
+    font-size: 1.1em;
+}
+
+.coming-soon {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border: 2px dashed #dee2e6;
+    border-radius: 15px;
+    padding: 50px 30px;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.coming-soon-icon {
+    font-size: 4em;
+    margin-bottom: 20px;
+    opacity: 0.7;
+}
+
+.coming-soon h3 {
+    color: #495057;
+    margin-bottom: 15px;
+    font-size: 1.5em;
+}
+
+.coming-soon p {
+    color: #6c757d;
+    line-height: 1.5;
+    font-size: 1em;
 }
 
 /* Botões */
@@ -489,6 +622,38 @@ body {
     height: 100%;
     color: #666;
     font-style: italic;
+}
+
+.log-message.fallback-mode {
+    padding: 20px;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    margin: 20px;
+    font-family: 'Roboto', Arial, sans-serif;
+    color: #856404;
+}
+
+.log-message.fallback-mode h4 {
+    color: #856404;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+}
+
+.log-message.fallback-mode h5 {
+    color: #856404;
+    margin: 15px 0 10px 0;
+    font-size: 1em;
+}
+
+.log-message.fallback-mode ol,
+.log-message.fallback-mode ul {
+    margin-left: 20px;
+    margin-bottom: 15px;
+}
+
+.log-message.fallback-mode li {
+    margin-bottom: 5px;
 }
 
 .log-entry {

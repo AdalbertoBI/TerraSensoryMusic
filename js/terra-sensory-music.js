@@ -100,6 +100,34 @@ class TerraSensoryMusicSystem {
                 if (e.target.id === 'messageModal') this.uiManager.closeModal();
             });
         }
+
+        // Configurar sistema de abas
+        this.setupTabs();
+    }
+
+    setupTabs() {
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabPanels = document.querySelectorAll('.tab-panel');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const targetTab = button.getAttribute('data-tab');
+                
+                // Remover classe active de todas as abas e painéis
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabPanels.forEach(panel => panel.classList.remove('active'));
+                
+                // Ativar a aba clicada
+                button.classList.add('active');
+                const targetPanel = document.getElementById(targetTab + '-panel');
+                if (targetPanel) {
+                    targetPanel.classList.add('active');
+                }
+
+                // Log para debug
+                console.log(`🔄 Aba ativada: ${targetTab}`);
+            });
+        });
     }
 
     setupChannels() {
@@ -171,14 +199,17 @@ class TerraSensoryMusicSystem {
     async connect() {
         try {
             this.uiManager.updateConnectionStatus('connecting');
+            this.uiManager.showNotification('🔄 Conectando... Aguarde resposta do navegador', 'info', 3000);
             this.diagnosticSystem.log('🔄 Iniciando conexão MIDI...', 'info');
             this.diagnosticSystem.log('💡 Dispositivo "Midi-Terra" detectado no Windows - tentando acessar via Web MIDI...', 'info');
             
             // Inicializar detector MIDI
             await this.midiDetector.initialize();
             
-            // Configurar handlers para mensagens MIDI
-            this.setupMidiMessageHandlers();
+            // 🔥 CORREÇÃO: Registrar callback ao invés de configurar handlers
+            this.midiDetector.onMidiMessage((event, deviceInfo) => {
+                this.handleMidiMessage(event, deviceInfo);
+            });
             
             this.isConnected = true;
             this.uiManager.updateConnectionStatus('connected');
@@ -217,15 +248,53 @@ class TerraSensoryMusicSystem {
             
         } catch (error) {
             console.error('❌ Erro ao conectar:', error);
-            this.diagnosticSystem.log(`❌ Erro de conexão: ${error.message}`, 'error');
             
-            if (error.name === 'SecurityError') {
-                this.uiManager.showNotification('❌ Permissão negada. Recarregue a página e permita o acesso aos dispositivos MIDI', 'error');
+            // Usar informações enriquecidas do erro se disponível
+            const userMessage = error.userMessage || error.message;
+            const technicalMessage = error.technicalMessage || error.message;
+            
+            this.diagnosticSystem.log(`❌ Erro de conexão: ${technicalMessage}`, 'error');
+            
+            // Mostrar mensagem específica baseada no tipo de erro
+            if (error.message.includes('Timeout')) {
+                this.uiManager.showNotification('⏰ Timeout: Clique em "🔄 Re-escanear" para tentar novamente', 'warning');
+                this.diagnosticSystem.log('💡 Dica: Verifique se não há popup de permissão aguardando resposta', 'info');
+            } else if (error.originalError?.name === 'SecurityError' || error.message.includes('Permissão negada')) {
+                this.uiManager.showNotification('🔒 Permissão negada. Clique em "🔄 Re-escanear" e permita o acesso MIDI', 'error');
+                this.diagnosticSystem.log('💡 Dica: Procure por popup de permissão ou recarregue a página', 'info');
+            } else if (error.originalError?.name === 'NotSupportedError') {
+                this.uiManager.showNotification('❌ Navegador não suporta Web MIDI. Use Chrome, Edge ou Opera', 'error');
+                this.diagnosticSystem.log('💡 Solução: Mude para um navegador compatível', 'warning');
             } else {
-                this.uiManager.showNotification(`❌ Erro: ${error.message}`, 'error');
+                this.uiManager.showNotification(`❌ ${userMessage}`, 'error');
             }
             
-            this.uiManager.updateConnectionStatus('disconnected');
+            // Verificar se deve tentar retry automático
+            if (error.shouldAutoRetry && error.retryAttempt < error.maxRetries) {
+                const nextAttempt = error.retryAttempt + 1;
+                this.uiManager.showNotification(`🔄 Tentativa ${nextAttempt}/${error.maxRetries} em 3 segundos...`, 'info', 3000);
+                this.diagnosticSystem.log(`🔄 Agendando retry automático ${nextAttempt}/${error.maxRetries}`, 'info');
+                
+                setTimeout(async () => {
+                    this.diagnosticSystem.log(`🔄 Executando retry automático ${nextAttempt}/${error.maxRetries}`, 'info');
+                    await this.connect();
+                }, 3000);
+                
+                return; // Não entrar em fallback ainda
+            }
+            
+            // Se não há mais retries ou erro não é recuperável
+            if (error.retryAttempt >= error.maxRetries) {
+                this.uiManager.showNotification(`❌ Falha após ${error.maxRetries} tentativas. Use "🔄 Re-escanear" para tentar novamente`, 'error');
+                this.diagnosticSystem.log(`❌ Todas as tentativas automáticas falharam (${error.maxRetries}/${error.maxRetries})`, 'error');
+            } else if (error.isRetryable !== false) {
+                setTimeout(() => {
+                    this.uiManager.showNotification('🔄 Clique em "Re-escanear" para tentar novamente', 'info');
+                }, 2000);
+            }
+            
+            // Entrar em modo fallback para manter funcionalidade
+            this.enableFallbackMode();
         }
     }
 
@@ -236,20 +305,16 @@ class TerraSensoryMusicSystem {
         this.diagnosticSystem.log('🔌 Sistema desconectado', 'info');
     }
 
-    setupMidiMessageHandlers() {
-        const inputs = this.midiDetector.getAllInputs();
-        
-        inputs.forEach(inputInfo => {
-            if (inputInfo.device && inputInfo.device.onmidimessage !== undefined) {
-                inputInfo.device.onmidimessage = (event) => {
-                    this.handleMidiMessage(event, inputInfo);
-                };
-            }
-        });
-    }
+    // 🔥 REMOVIDO: setupMidiMessageHandlers - agora usa callback system
 
     handleMidiMessage(event, deviceInfo) {
         if (this.isPaused || !event.data) return;
+
+        // 🔥 DEBUG: Verificar se está recebendo mensagens
+        console.log('🎯 Sistema principal recebeu mensagem MIDI:', {
+            device: deviceInfo.name,
+            data: Array.from(event.data).map(b => '0x' + b.toString(16).toUpperCase().padStart(2, '0')).join(' ')
+        });
 
         // Usar o parser para interpretar a mensagem
         const parsedMessage = this.midiParser.parseMessage(
@@ -318,7 +383,13 @@ class TerraSensoryMusicSystem {
     }
 
     updateChannelActivity(message) {
-        if (typeof message.channel !== 'number') return;
+        if (typeof message.channel !== 'number') {
+            console.log('⚠️ Canal inválido:', message.channel);
+            return;
+        }
+        
+        // 🔥 DEBUG: Atividade do canal
+        console.log('📊 Atualizando canal:', message.channel, 'tipo:', message.type);
         
         const channel = this.channels.get(message.channel);
         
@@ -342,6 +413,13 @@ class TerraSensoryMusicSystem {
         const channelFilter = document.getElementById('channelFilter')?.value;
         const typeFilter = document.getElementById('messageType')?.value;
         
+        // 🔥 DEBUG: Verificar aplicação de filtros
+        console.log('🔍 Aplicando filtros:', {
+            totalMessages: this.midiLog.length,
+            channelFilter,
+            typeFilter
+        });
+        
         this.filteredLog = this.midiLog.filter(message => {
             if (channelFilter && message.channel !== parseInt(channelFilter.replace('0x9', ''))) {
                 return false;
@@ -352,6 +430,12 @@ class TerraSensoryMusicSystem {
             }
             
             return true;
+        });
+        
+        // 🔥 DEBUG: Verificar resultado dos filtros
+        console.log('🔍 Resultado dos filtros:', {
+            filtered: this.filteredLog.length,
+            total: this.midiLog.length
         });
         
         this.uiManager.updateLogDisplay(this.filteredLog, this.filteredLog.length);
@@ -420,14 +504,23 @@ class TerraSensoryMusicSystem {
     }
 
     // Método para forçar re-scan de dispositivos
-    forceScan() {
+    async forceScan() {
         this.diagnosticSystem.log('🔄 Forçando novo scan de dispositivos...', 'info');
+        this.uiManager.showNotification('🔄 Re-escaneando dispositivos MIDI...', 'info');
         
-        if (!this.isConnected) {
-            this.uiManager.showNotification('⚠️ Conecte-se ao MIDI primeiro', 'warning');
+        // Resetar estado de retry para nova tentativa manual
+        if (this.midiDetector) {
+            this.midiDetector.resetRetryState();
+        }
+        
+        // Se estiver em modo fallback ou não conectado, tentar conectar novamente
+        if (!this.isConnected || !this.midiDetector || !this.midiDetector.midiAccess) {
+            this.diagnosticSystem.log('🔄 Tentando reconectar MIDI...', 'info');
+            await this.connect();
             return;
         }
         
+        // Se já conectado, fazer apenas scan
         if (this.midiDetector) {
             this.midiDetector.forceScan();
             
@@ -442,8 +535,13 @@ class TerraSensoryMusicSystem {
                 if (terraDevices.length > 0) {
                     const deviceNames = terraDevices.map(d => d.name).join(', ');
                     this.uiManager.showNotification(`🎯 Dispositivos Terra encontrados: ${deviceNames}`, 'terra');
+                    this.diagnosticSystem.log(`🎯 Re-scan concluído: ${terraDevices.length} dispositivos Terra`, 'terra');
+                } else if (allInputs.length > 0) {
+                    this.uiManager.showNotification(`📊 ${allInputs.length} dispositivos MIDI encontrados (nenhum Terra)`, 'warning');
+                    this.diagnosticSystem.log(`📊 Re-scan: ${allInputs.length} dispositivos genéricos, 0 Terra`, 'warning');
                 } else {
-                    this.uiManager.showNotification('⚠️ Nenhum dispositivo Terra detectado no re-scan', 'warning');
+                    this.uiManager.showNotification('❌ Nenhum dispositivo MIDI encontrado no re-scan', 'error');
+                    this.diagnosticSystem.log('❌ Re-scan: nenhum dispositivo encontrado', 'error');
                 }
             }, 500);
         }
@@ -513,6 +611,60 @@ class TerraSensoryMusicSystem {
         `;
 
         this.uiManager.showModal('Detalhes da Mensagem', detailsHtml);
+    }
+
+    // Método de fallback quando MIDI não está disponível
+    enableFallbackMode() {
+        console.log('🔄 Entrando em modo fallback...');
+        this.diagnosticSystem.log('🔄 Entrando em modo fallback - interface funcional sem MIDI', 'warning');
+        
+        // Simular conexão parcial para manter a interface funcionando
+        this.isConnected = false;
+        this.uiManager.updateConnectionStatus('fallback');
+        
+        // Mostrar instruções claras
+        const fallbackMessage = `
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                <h4>🔧 Modo Diagnóstico Ativo</h4>
+                <p><strong>A interface está funcionando sem conexão MIDI real.</strong></p>
+                
+                <h5>💡 Para conectar o Midi-Terra:</h5>
+                <ol>
+                    <li>Verifique se o dispositivo está conectado via USB</li>
+                    <li>Confirme que aparece no Gerenciador de Dispositivos do Windows</li>
+                    <li>Clique em "🔄 Re-escanear" para tentar novamente</li>
+                    <li>Se aparecer popup de permissão, clique em "Permitir" <strong>rapidamente</strong></li>
+                    <li>O sistema fará 3 tentativas automáticas com timeouts crescentes (5s, 10s, 15s)</li>
+                </ol>
+                
+                <h5>🛠️ Diagnóstico avançado:</h5>
+                <ul>
+                    <li>Clique em "🔍 Diagnosticar" para análise completa</li>
+                    <li>Use "🔄 Re-escanear" para nova tentativa (reseta contador)</li>
+                    <li>Verifique o Console do navegador (F12) para logs detalhados</li>
+                </ul>
+                
+                <h5>⚠️ Possíveis causas do timeout:</h5>
+                <ul>
+                    <li>Popup de permissão não foi respondido a tempo</li>
+                    <li>Conflito com outro software MIDI</li>
+                    <li>Problema de driver do dispositivo Midi-Terra</li>
+                    <li>Política de segurança do navegador/empresa</li>
+                </ul>
+            </div>
+        `;
+        
+        // Mostrar no log
+        const logContainer = document.getElementById('logContainer');
+        if (logContainer) {
+            logContainer.innerHTML = `
+                <div class="log-message fallback-mode">
+                    ${fallbackMessage}
+                </div>
+            `;
+        }
+        
+        this.uiManager.showNotification('🔧 Modo diagnóstico: Interface funcional, MIDI desconectado', 'warning', 8000);
     }
 
     startStatsUpdater() {

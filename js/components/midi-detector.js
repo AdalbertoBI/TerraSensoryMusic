@@ -8,6 +8,13 @@ class MidiDetector {
         this.connectedOutputs = new Map();
         this.terraDevices = new Map();
         this.deviceStateCallbacks = [];
+        this.midiMessageCallbacks = [];
+        
+        // Sistema de retry progressivo
+        this.retryAttempts = 0;
+        this.maxRetries = 3;
+        this.retryTimeouts = [5000, 10000, 15000]; // 5s, 10s, 15s
+        this.lastErrorType = null;
         
         // Padrões para identificar dispositivos Terra (case insensitive)
         this.terraPatterns = [
@@ -44,12 +51,36 @@ class MidiDetector {
         }
         
         console.log('✅ Web MIDI API suportada');
+        
+        // Diagnóstico pré-conexão
+        await this.preConnectionDiagnostic();
+        
         console.log('🔐 Solicitando acesso aos dispositivos MIDI (pode aparecer popup de permissão)...');
 
         try {
             console.log('⏳ Aguardando navigator.requestMIDIAccess...');
-            this.midiAccess = await navigator.requestMIDIAccess({ sysex: true });
+            
+            // Usar timeout baseado na tentativa atual
+            const currentTimeout = this.retryTimeouts[Math.min(this.retryAttempts, this.retryTimeouts.length - 1)];
+            console.log(`⏰ Timeout configurado para ${currentTimeout/1000} segundos (tentativa ${this.retryAttempts + 1})`);
+            
+            // Criar timeout progressivo
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => {
+                    reject(new Error(`Timeout: requestMIDIAccess demorou mais de ${currentTimeout/1000} segundos (tentativa ${this.retryAttempts + 1}/${this.maxRetries})`));
+                }, currentTimeout);
+            });
+            
+            // Usar Promise.race para implementar timeout
+            this.midiAccess = await Promise.race([
+                navigator.requestMIDIAccess({ sysex: true }),
+                timeoutPromise
+            ]);
+            
             console.log('🎯 Acesso MIDI obtido com sucesso!');
+            
+            // Resetar contador de tentativas em caso de sucesso
+            this.retryAttempts = 0;
             
             // Log informações sobre o acesso MIDI
             console.log('📊 Dispositivos de entrada encontrados:', this.midiAccess.inputs.size);
@@ -73,15 +104,193 @@ class MidiDetector {
             console.error('📋 Tipo do erro:', error.name);
             console.error('📋 Mensagem do erro:', error.message);
             
-            if (error.name === 'SecurityError') {
+            // Tratamento específico por tipo de erro
+            let userMessage = '';
+            let technicalMessage = '';
+            
+            if (error.message.includes('Timeout')) {
+                console.error('⏰ TIMEOUT - requestMIDIAccess demorou mais de 10 segundos');
+                userMessage = 'Timeout: A solicitação de acesso MIDI demorou muito. Tente novamente ou verifique se não há popup esperando resposta.';
+                technicalMessage = 'O requestMIDIAccess() não respondeu em 10 segundos';
+            } else if (error.name === 'SecurityError') {
                 console.error('🚫 ERRO DE SEGURANÇA - Permissão negada pelo usuário');
+                userMessage = 'Permissão negada. Clique em "Permitir" quando o navegador solicitar acesso aos dispositivos MIDI.';
+                technicalMessage = 'SecurityError: Usuário negou permissão ou política de segurança bloqueou';
             } else if (error.name === 'AbortError') {
-                console.error('⏹️ OPERAÇÃO CANCELADA - Usuário cancelou ou timeout');
+                console.error('⏹️ OPERAÇÃO CANCELADA - Usuário cancelou');  
+                userMessage = 'Operação cancelada. Tente conectar novamente e permita o acesso aos dispositivos MIDI.';
+                technicalMessage = 'AbortError: Usuário cancelou a solicitação de permissão';
             } else if (error.name === 'NotSupportedError') {
                 console.error('🚫 RECURSO NÃO SUPORTADO - Web MIDI não disponível');
+                userMessage = 'Web MIDI API não suportada. Use Chrome 43+, Edge 79+, ou Opera 30+.';
+                technicalMessage = 'NotSupportedError: Web MIDI API não disponível neste navegador';
+            } else {
+                console.error('❓ ERRO DESCONHECIDO');
+                userMessage = `Erro inesperado: ${error.message}. Tente recarregar a página.`;
+                technicalMessage = `Erro desconhecido: ${error.name} - ${error.message}`;
             }
             
-            throw error;
+            // Verificar se deve tentar novamente
+            const shouldRetry = this.shouldRetryConnection(error);
+            
+            // Criar erro enriquecido com informações para o usuário
+            const enhancedError = new Error(userMessage);
+            enhancedError.originalError = error;
+            enhancedError.technicalMessage = technicalMessage;
+            enhancedError.userMessage = userMessage;
+            enhancedError.isRetryable = error.name !== 'NotSupportedError';
+            enhancedError.shouldAutoRetry = shouldRetry;
+            enhancedError.retryAttempt = this.retryAttempts;
+            enhancedError.maxRetries = this.maxRetries;
+            
+            // Incrementar contador para próxima tentativa
+            if (shouldRetry) {
+                this.retryAttempts++;
+                this.lastErrorType = error.name || 'Unknown';
+            }
+            
+            throw enhancedError;
+        }
+    }
+
+    async preConnectionDiagnostic() {
+        console.log('🔍 Executando diagnóstico pré-conexão...');
+        
+        // Verificar Permissions API se disponível
+        if (navigator.permissions && navigator.permissions.query) {
+            try {
+                console.log('🔐 Verificando estado de permissão MIDI...');
+                const permission = await navigator.permissions.query({ name: 'midi', sysex: true });
+                console.log(`📋 Estado da permissão: ${permission.state}`);
+                
+                if (permission.state === 'denied') {
+                    console.warn('🚫 PERMISSÃO MIDI NEGADA - Este é o problema!');
+                    const error = new Error('Permissão MIDI foi negada pelo usuário. Recarregue a página e permita o acesso.');
+                    error.name = 'SecurityError';
+                    error.userMessage = 'Permissão MIDI negada. Recarregue a página e clique em "Permitir" quando solicitado.';
+                    error.technicalMessage = 'Permissions API indica que MIDI foi explicitamente negado';
+                    error.isRetryable = true;
+                    throw error;
+                } else if (permission.state === 'prompt') {
+                    console.log('❓ Permissão será solicitada - popup deve aparecer');
+                } else if (permission.state === 'granted') {
+                    console.log('✅ Permissão já concedida anteriormente');
+                }
+            } catch (permError) {
+                // Se Permissions API falhar, continuar (nem todos navegadores suportam)
+                console.warn('⚠️ Não foi possível verificar permissão via Permissions API:', permError.message);
+            }
+        } else {
+            console.log('⚠️ Permissions API não disponível - seguindo para requestMIDIAccess');
+        }
+        
+        // Verificar se popup blocker pode estar interferindo
+        this.checkPopupBlocker();
+        
+        // Verificar configurações do navegador conhecidas
+        this.checkBrowserConfiguration();
+        
+        console.log('✅ Diagnóstico pré-conexão concluído');
+        
+        // Log detalhado do ambiente para depuração avançada
+        this.logEnvironmentDetails();
+    }
+
+    logEnvironmentDetails() {
+        console.log('🔬 === DIAGNÓSTICO AVANÇADO DO AMBIENTE ===');
+        console.log('🌐 User Agent:', navigator.userAgent);
+        console.log('🖥️ Plataforma:', navigator.platform);
+        console.log('🌍 Idioma:', navigator.language);
+        console.log('🔗 URL atual:', window.location.href);
+        console.log('🔐 Protocolo:', window.location.protocol);
+        console.log('🏠 Hostname:', window.location.hostname);
+        console.log('⚡ Suporte a Promises:', typeof Promise !== 'undefined');
+        console.log('🎵 Web MIDI disponível:', typeof navigator.requestMIDIAccess === 'function');
+        console.log('🔑 Permissions API:', typeof navigator.permissions !== 'undefined');
+        console.log('🖼️ Em iframe:', window !== window.top);
+        console.log('🔒 Contexto seguro:', window.isSecureContext);
+        
+        // Verificar possíveis conflitos conhecidos
+        this.checkKnownConflicts();
+        
+        console.log('🔬 === FIM DO DIAGNÓSTICO AVANÇADO ===');
+    }
+
+    checkKnownConflicts() {
+        console.log('⚠️ Verificando conflitos conhecidos...');
+        
+        // Verificar extensões que podem interferir
+        if (window.chrome && window.chrome.runtime) {
+            console.log('🔧 Ambiente Chrome com extensões detectado');
+        }
+        
+        // Verificar se há outros scripts MIDI carregados
+        const scripts = document.querySelectorAll('script');
+        const midiScripts = Array.from(scripts).filter(script => 
+            script.src && (script.src.includes('midi') || script.src.includes('web-audio'))
+        );
+        
+        if (midiScripts.length > 0) {
+            console.log('⚠️ Outros scripts MIDI detectados:', midiScripts.map(s => s.src));
+        }
+        
+        // Verificar variáveis globais que podem conflitar
+        const potentialConflicts = ['MIDI', 'WebMIDI', 'midiAccess'];
+        potentialConflicts.forEach(varName => {
+            if (window[varName]) {
+                console.log(`⚠️ Variável global conflitante detectada: ${varName}`);
+            }
+        });
+    }
+
+    checkPopupBlocker() {
+        // Testar se popup blocker está ativo
+        try {
+            const testWindow = window.open('', '_blank', 'width=1,height=1');
+            if (testWindow) {
+                testWindow.close();
+                console.log('✅ Popup blocker não está interferindo');
+            } else {
+                console.warn('⚠️ Popup blocker pode estar ativo - isso pode afetar permissões MIDI');
+            }
+        } catch (error) {
+            console.warn('⚠️ Não foi possível testar popup blocker:', error.message);
+        }
+    }
+
+    checkBrowserConfiguration() {
+        const userAgent = navigator.userAgent.toLowerCase();
+        
+        if (userAgent.includes('chrome')) {
+            console.log('🌐 Chrome detectado - Web MIDI deveria funcionar');
+            
+            // Verificar se é uma versão muito antiga
+            const chromeMatch = userAgent.match(/chrome\/(\d+)/);
+            if (chromeMatch) {
+                const version = parseInt(chromeMatch[1]);
+                if (version < 43) {
+                    console.warn(`⚠️ Chrome ${version} muito antigo - Web MIDI requer Chrome 43+`);
+                } else {
+                    console.log(`✅ Chrome ${version} - compatível com Web MIDI`);
+                }
+            }
+        } else if (userAgent.includes('edg')) {
+            console.log('🌐 Edge detectado - Web MIDI deveria funcionar');
+        } else if (userAgent.includes('opera')) {
+            console.log('🌐 Opera detectado - Web MIDI deveria funcionar');
+        } else {
+            console.warn('⚠️ Navegador não reconhecido - Web MIDI pode não ser suportado');
+        }
+        
+        // Verificar protocolo
+        if (location.protocol === 'file:') {
+            console.warn('⚠️ Executando via file:// - isso pode causar problemas de permissão');
+        } else if (location.protocol === 'https:') {
+            console.log('✅ HTTPS detectado - ideal para Web MIDI');
+        } else if (location.protocol === 'http:' && location.hostname === 'localhost') {
+            console.log('✅ localhost HTTP - deveria funcionar para Web MIDI');
+        } else {
+            console.warn('⚠️ HTTP não-localhost pode ter restrições de permissão');
         }
     }
 
@@ -302,15 +511,22 @@ class MidiDetector {
         if (event.data && event.data.length > 0) {
             const data = Array.from(event.data);
             
-            // Padrões específicos de mensagens Terra (se conhecidos)
-            // Aqui você pode adicionar lógica específica baseada no protocolo Terra
-            
+            // Log detalhado das mensagens MIDI
             console.log(`🎵 MIDI de ${deviceInfo.name}:`, data.map(b => '0x' + b.toString(16).toUpperCase().padStart(2, '0')).join(' '));
             
             // Se recebermos dados MIDI, aumentar a confiança de que é um dispositivo Terra ativo
             if (deviceInfo.confidence < 0.8) {
                 deviceInfo.confidence = Math.min(deviceInfo.confidence + 0.1, 0.8);
             }
+            
+            // 🔥 CORREÇÃO: Repassar mensagem para callbacks registrados
+            this.midiMessageCallbacks.forEach(callback => {
+                try {
+                    callback(event, deviceInfo);
+                } catch (error) {
+                    console.error('❌ Erro no callback de mensagem MIDI:', error);
+                }
+            });
         }
     }
 
@@ -348,6 +564,40 @@ class MidiDetector {
 
     onDeviceStateChange(callback) {
         this.deviceStateCallbacks.push(callback);
+    }
+
+    // 🔥 NOVO: Registrar callback para mensagens MIDI
+    onMidiMessage(callback) {
+        this.midiMessageCallbacks.push(callback);
+        console.log('🔗 Callback de mensagem MIDI registrado');
+    }
+
+    shouldRetryConnection(error) {
+        // Não retry se já excedeu o máximo
+        if (this.retryAttempts >= this.maxRetries) {
+            console.log(`❌ Máximo de tentativas (${this.maxRetries}) atingido`);
+            return false;
+        }
+        
+        // Não retry para erros não-recuperáveis
+        if (error.name === 'NotSupportedError') {
+            console.log('❌ Erro não-recuperável: Web MIDI não suportado');
+            return false;
+        }
+        
+        // Retry para timeouts e erros de segurança
+        if (error.message.includes('Timeout') || error.name === 'SecurityError' || error.name === 'AbortError') {
+            console.log(`🔄 Erro recuperável detectado: ${error.name || 'Timeout'} - retry possível`);
+            return true;
+        }
+        
+        return false;
+    }
+
+    resetRetryState() {
+        this.retryAttempts = 0;
+        this.lastErrorType = null;
+        console.log('🔄 Estado de retry resetado');
     }
 
     // Método para forçar re-scan

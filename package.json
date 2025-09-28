@@ -1,0 +1,20 @@
+{
+  "name": "terra-sensory-music",
+  "version": "1.0.0",
+  "description": "Sistema de monitoramento MIDI para Terra Eletrônica",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx http-server . -p 8080 -c-1 --cors",
+    "dev-https": "npx http-server . -p 8443 -S -c-1 --cors",
+    "start": "npx live-server --port=5500 --cors",
+    "chrome": "chrome-dev.bat",
+    "test": "echo \"Teste: Abrir http://localhost:8080 no Chrome\""
+  },
+  "keywords": ["midi", "arduino", "terra-electronica", "web-midi"],
+  "author": "Terra Eletrônica",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "live-server": "^1.2.2"
+  }
+}

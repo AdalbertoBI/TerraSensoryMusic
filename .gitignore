@@ -35,8 +35,11 @@ coverage/
 ehthumbs.db
 Thumbs.db
 
-# IDE
-.vscode/
+# IDE (manter configurações do VS Code para o projeto)
+.vscode/launch.json
+.vscode/tasks.json
+.chrome-dev/
+.chrome-dev-session/
 .idea/
 *.swp
 *.swo
@@ -45,6 +48,23 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+temp/
+tmp/
 
 # Local development
 .cache/
+.parcel-cache/
+
+# SSL Certificates (desenvolvimento local)
+*.pem
+*.key
+*.cert
+server-key.pem
+server-cert.pem
+
+# Backup files
+*.bak
+*.backup
+
+# Testing
+.nyc_output/
