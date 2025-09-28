@@ -22,7 +22,7 @@
     <meta property="twitter:description" content="Sistema de monitoramento MIDI para dispositivos Terra Eletrônica">
     <meta property="twitter:image" content="https://adalbertobi.github.io/TerraSensoryMusic/preview.png">
     
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     
     <!-- Favicon -->
@@ -36,11 +36,6 @@
                 <div class="logo">
                     <h1>🎵 TerraSensoryMusic</h1>
                     <p>Terra Eletrônica - Sistema de Monitoramento MIDI</p>
-                    <div class="version-info">
-                        <a href="https://github.com/AdalbertoBI/TerraSensoryMusic" target="_blank" class="github-link">
-                            📂 GitHub
-                        </a>
-                    </div>
                 </div>
                 <div class="connection-status">
                     <div class="status-indicator" id="connectionStatus">
@@ -110,6 +105,8 @@
                     <button id="pauseBtn" class="btn btn-warning">Pausar</button>
                     <button id="clearLog" class="btn btn-danger">Limpar Log</button>
                     <button id="exportBtn" class="btn btn-success">Exportar</button>
+                    <button id="diagnoseBtn" class="btn btn-secondary">🔍 Diagnosticar</button>
+                    <button id="rescanBtn" class="btn btn-primary">🔄 Re-escanear</button>
                 </div>
             </div>
             
@@ -178,9 +175,7 @@
             <div class="footer-content">
                 <p>© 2025 Terra Eletrônica - TerraSensoryMusic</p>
                 <div class="footer-links">
-                    <a href="https://github.com/AdalbertoBI/TerraSensoryMusic" target="_blank">GitHub</a>
-                    <a href="https://github.com/AdalbertoBI/TerraSensoryMusic/issues" target="_blank">Suporte</a>
-                    <a href="https://github.com/AdalbertoBI/TerraSensoryMusic/blob/main/README.md" target="_blank">Documentação</a>
+                    <span>Sistema de Monitoramento MIDI</span>
                 </div>
             </div>
         </footer>
@@ -202,6 +197,12 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-    <script src="terra-sensory-music-webmidi.js"></script>
+    
+    <!-- Módulos do sistema -->
+    <script src="js/components/diagnostic-system.js"></script>
+    <script src="js/components/midi-detector.js"></script>
+    <script src="js/components/ui-manager.js"></script>
+    <script src="js/components/midi-parser.js"></script>
+    <script src="js/terra-sensory-music.js"></script>
 </body>
 </html>
