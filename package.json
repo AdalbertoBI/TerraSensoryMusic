@@ -1,0 +1,24 @@
+{
+  "name": "midi-terra-monitor",
+  "version": "1.0.0",
+  "description": "Sistema de monitoramento MIDI para Terra Eletrônica",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server-demo.js",
+    "dev": "nodemon server-demo.js",
+    "real": "node server.js"
+  },
+  "keywords": ["midi", "monitoring", "terra", "arduino", "rf24"],
+  "author": "Terra Eletrônica",
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.14.2",
+    "express": "^4.18.2",
+    "fs-extra": "^11.1.1",
+    "moment": "^2.29.4",
+    "@julusian/midi": "^3.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

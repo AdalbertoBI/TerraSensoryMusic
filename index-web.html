@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TerraSensoryMusic - Terra Eletrônica</title>
+    <meta name="description" content="Sistema de monitoramento MIDI para Terra Eletrônica - Demonstração Web">
+    <meta name="keywords" content="MIDI, Arduino, Terra Eletrônica, Música, Sensores, RF24">
+    <meta name="author" content="Terra Eletrônica">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://adalbertobi.github.io/TerraSensoryMusic/">
+    <meta property="og:title" content="TerraSensoryMusic - Sistema MIDI Terra Eletrônica">
+    <meta property="og:description" content="Sistema de monitoramento MIDI para dispositivos Terra Eletrônica">
+    <meta property="og:image" content="https://adalbertobi.github.io/TerraSensoryMusic/preview.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://adalbertobi.github.io/TerraSensoryMusic/">
+    <meta property="twitter:title" content="TerraSensoryMusic - Sistema MIDI Terra Eletrônica">
+    <meta property="twitter:description" content="Sistema de monitoramento MIDI para dispositivos Terra Eletrônica">
+    <meta property="twitter:image" content="https://adalbertobi.github.io/TerraSensoryMusic/preview.png">
+    
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <!-- Cabeçalho -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <h1>🎵 TerraSensoryMusic</h1>
+                    <p>Terra Eletrônica - Sistema de Monitoramento MIDI</p>
+                    <div class="version-info">
+                        <span class="demo-badge">DEMO WEB</span>
+                        <a href="https://github.com/AdalbertoBI/TerraSensoryMusic" target="_blank" class="github-link">
+                            📂 GitHub
+                        </a>
+                    </div>
+                </div>
+                <div class="connection-status">
+                    <div class="status-indicator" id="connectionStatus">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Desconectado - Demo Web</span>
+                    </div>
+                    <button id="connectBtn" class="btn btn-primary">Conectar (Demo)</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Painel de Controle -->
+        <div class="control-panel">
+            <div class="panel-section">
+                <h3>Filtros</h3>
+                <div class="filters">
+                    <div class="filter-group">
+                        <label for="channelFilter">Canal:</label>
+                        <select id="channelFilter">
+                            <option value="">Todos os canais</option>
+                            <option value="0x90">Canal 0 (0x90)</option>
+                            <option value="0x91">Canal 1 (0x91)</option>
+                            <option value="0x92">Canal 2 (0x92)</option>
+                            <option value="0x93">Canal 3 (0x93)</option>
+                            <option value="0x94">Canal 4 (0x94)</option>
+                            <option value="0x95">Canal 5 (0x95)</option>
+                            <option value="0x96">Canal 6 (0x96)</option>
+                            <option value="0x97">Canal 7 (0x97)</option>
+                            <option value="0x98">Canal 8 (0x98)</option>
+                            <option value="0x99">Canal 9 (0x99)</option>
+                            <option value="0x9A">Canal 10 (0x9A)</option>
+                            <option value="0x9B">Canal 11 (0x9B)</option>
+                            <option value="0x9C">Canal 12 (0x9C)</option>
+                            <option value="0x9D">Canal 13 (0x9D)</option>
+                            <option value="0x9E">Canal 14 (0x9E)</option>
+                            <option value="0x9F">Canal 15 (0x9F)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="messageType">Tipo:</label>
+                        <select id="messageType">
+                            <option value="">Todos os tipos</option>
+                            <option value="noteOn">Note On</option>
+                            <option value="noteOff">Note Off</option>
+                            <option value="controlChange">Control Change</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="slaveFilter">Slave:</label>
+                        <select id="slaveFilter">
+                            <option value="">Todos os slaves</option>
+                            <option value="01">Slave 01</option>
+                            <option value="02">Slave 02</option>
+                            <option value="03">Slave 03</option>
+                            <option value="04">Slave 04</option>
+                            <option value="05">Slave 05</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <h3>Controles</h3>
+                <div class="controls">
+                    <button id="pauseBtn" class="btn btn-warning">Pausar</button>
+                    <button id="clearLog" class="btn btn-danger">Limpar Log</button>
+                    <button id="exportBtn" class="btn btn-success">Exportar</button>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <h3>Estatísticas</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalMessages">0</div>
+                        <div class="stat-label">Mensagens</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="messagesPerSecond">0</div>
+                        <div class="stat-label">Msgs/seg</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="activeChannels">0</div>
+                        <div class="stat-label">Canais Ativos</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="connectedSlaves">0</div>
+                        <div class="stat-label">Slaves</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Canais MIDI -->
+        <div class="channels-panel">
+            <h3>📡 Canais MIDI</h3>
+            <div class="channels-grid" id="channelsGrid">
+                <!-- Canais serão criados dinamicamente -->
+            </div>
+        </div>
+
+        <!-- Log de Mensagens -->
+        <div class="log-panel">
+            <div class="log-header">
+                <h3>📋 Log de Mensagens MIDI</h3>
+                <div class="log-info">
+                    <span id="logCount">0 mensagens</span>
+                    <span id="logSize">0 KB</span>
+                    <label class="auto-scroll-label">
+                        <input type="checkbox" id="autoScroll" checked>
+                        Auto-scroll
+                    </label>
+                </div>
+            </div>
+            <div class="log-table">
+                <div class="log-header-row">
+                    <div class="log-col">Hora</div>
+                    <div class="log-col">Canal</div>
+                    <div class="log-col">Tipo</div>
+                    <div class="log-col">Nota</div>
+                    <div class="log-col">Velocity</div>
+                    <div class="log-col">Slave</div>
+                    <div class="log-col">Dados</div>
+                </div>
+                <div class="log-container" id="logContainer">
+                    <div class="log-empty">🎵 TerraSensoryMusic aguardando dados MIDI... Clique em "Conectar (Demo)" para começar!</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p>© 2025 Terra Eletrônica - TerraSensoryMusic</p>
+                <div class="footer-links">
+                    <a href="https://github.com/AdalbertoBI/TerraSensoryMusic" target="_blank">GitHub</a>
+                    <a href="https://github.com/AdalbertoBI/TerraSensoryMusic/issues" target="_blank">Suporte</a>
+                    <a href="https://github.com/AdalbertoBI/TerraSensoryMusic/blob/main/README.md" target="_blank">Documentação</a>
+                </div>
+            </div>
+        </footer>
+
+        <!-- Modal de Detalhes -->
+        <div class="modal" id="messageModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Detalhes da Mensagem MIDI</h3>
+                    <span class="modal-close" id="modalClose">&times;</span>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <!-- Conteúdo será preenchido dinamicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="terra-sensory-music-web.js"></script>
+</body>
+</html>
