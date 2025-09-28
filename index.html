@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TerraSensoryMusic - Terra Eletrônica</title>
-    <meta name="description" content="Sistema de monitoramento MIDI para Terra Eletrônica - Demonstração Web">
+    <meta name="description" content="Sistema de monitoramento MIDI para Terra Eletrônica - Dados MIDI Reais">
     <meta name="keywords" content="MIDI, Arduino, Terra Eletrônica, Música, Sensores, RF24">
     <meta name="author" content="Terra Eletrônica">
     
@@ -37,7 +37,6 @@
                     <h1>🎵 TerraSensoryMusic</h1>
                     <p>Terra Eletrônica - Sistema de Monitoramento MIDI</p>
                     <div class="version-info">
-                        <span class="demo-badge">DEMO WEB</span>
                         <a href="https://github.com/AdalbertoBI/TerraSensoryMusic" target="_blank" class="github-link">
                             📂 GitHub
                         </a>
@@ -46,9 +45,9 @@
                 <div class="connection-status">
                     <div class="status-indicator" id="connectionStatus">
                         <span class="status-dot"></span>
-                        <span class="status-text">Desconectado - Demo Web</span>
+                        <span class="status-text">Desconectado</span>
                     </div>
-                    <button id="connectBtn" class="btn btn-primary">Conectar (Demo)</button>
+                    <button id="connectBtn" class="btn btn-primary">Conectar MIDI</button>
                 </div>
             </div>
         </header>
@@ -169,7 +168,7 @@
                     <div class="log-col">Dados</div>
                 </div>
                 <div class="log-container" id="logContainer">
-                    <div class="log-empty">🎵 TerraSensoryMusic aguardando dados MIDI... Clique em "Conectar (Demo)" para começar!</div>
+                    <div class="log-empty">🎵 TerraSensoryMusic aguardando conexão MIDI... Conecte seu dispositivo Terra!</div>
                 </div>
             </div>
         </div>
@@ -203,6 +202,6 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-    <script src="terra-sensory-music-web.js"></script>
+    <script src="terra-sensory-music-real.js"></script>
 </body>
 </html>

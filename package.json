@@ -4,9 +4,9 @@
   "description": "Sistema de monitoramento MIDI para Terra Eletrônica",
   "main": "server.js",
   "scripts": {
-    "start": "node server-demo.js",
-    "dev": "nodemon server-demo.js",
-    "real": "node server.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "demo": "node server-demo.js"
   },
   "keywords": ["midi", "monitoring", "terra", "arduino", "rf24"],
   "author": "Terra Eletrônica",
